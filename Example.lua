@@ -13,15 +13,27 @@
 --     local KrixUI = (paste UILib.lua here and it returns KrixUI)
 -- ============================================================
 
--- ── For local testing: source UILib inline then run this block ──
--- If testing in an executor locally, paste the contents of UILib.lua
--- ABOVE this line and replace the line below with the return value.
+-- ── Chargement sécurisé de la lib ────────────────────────
+local RAW_URL = "https://raw.githubusercontent.com/lfw5/UI-lib/refs/heads/main/UILib.lua"
 
--- !! REPLACE THIS LINE with your real GitHub raw URL !!
-local KrixUI = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/lfw5/UI-lib/refs/heads/main/UILib.lua",
-    true
-))()
+local source = nil
+local ok_http, err_http = pcall(function()
+    source = game:HttpGet(RAW_URL, true)
+end)
+
+if not ok_http or not source or source == "" then
+    error("[KrixUI] Échec HttpGet: " .. tostring(err_http))
+end
+
+local fn, err_load = loadstring(source)
+if not fn then
+    error("[KrixUI] Erreur de syntaxe dans UILib.lua: " .. tostring(err_load))
+end
+
+local KrixUI = fn()
+if not KrixUI then
+    error("[KrixUI] La lib a retourné nil. Vérifiez que UILib.lua finit bien par 'return KrixUI'")
+end
 
 -- ── Create Window ─────────────────────────────────────────
 local Window = KrixUI:CreateWindow({
