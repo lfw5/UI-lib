@@ -199,16 +199,14 @@ function KrixUI:CreateWindow(options)
     })
 
     -- Logo dot
-    Create("Frame", {
+    local dot = Create("Frame", {
         Size            = UDim2.new(0, 10, 0, 10),
         Position        = UDim2.new(0, 14, 0.5, -5),
         BackgroundColor3= Theme.Accent,
         BorderSizePixel = 0,
         Parent          = TopBar,
-    }):FindFirstChildWhichIsA("UICorner") or Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = TopBar:FindFirstChild("Frame") or TopBar })
-
-    local dot = TopBar:FindFirstChild("Frame")
-    if dot then Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = dot }) end
+    })
+    Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = dot })
 
     -- Title label
     Create("TextLabel", {
