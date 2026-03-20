@@ -117,13 +117,24 @@ function KrixUI:CreateWindow(options)
     local pos      = options.Position or UDim2.new(0.5, -300, 0.5, -210)
 
     -- ── Root ScreenGui ─────────────────────────────────────
+    local guiParent = CoreGui
+    pcall(function()
+        if gethui then
+            guiParent = gethui()
+        elseif syn and syn.protect_gui then
+            local sg = Instance.new("ScreenGui")
+            syn.protect_gui(sg)
+            sg:Destroy()
+            guiParent = CoreGui
+        end
+    end)
+
     local ScreenGui = Create("ScreenGui", {
         Name             = "KrixUI",
         ResetOnSpawn     = false,
         ZIndexBehavior   = Enum.ZIndexBehavior.Sibling,
         IgnoreGuiInset   = true,
-        Parent           = (syn and syn.protect_gui and syn.protect_gui(Instance.new("ScreenGui")) ~= nil and CoreGui) or
-                           (gethui and gethui()) or CoreGui,
+        Parent           = guiParent,
     })
 
     -- ── Drop shadow ────────────────────────────────────────

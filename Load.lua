@@ -9,7 +9,7 @@
 -- ============================================================
 
 local KrixUI = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/YOUR_USERNAME/KrixUI/main/UILib.lua",
+    "raw.githubusercontent.com/lfw5/UI-lib/refs/heads/main/UILib.lua",
     true
 ))()
 
