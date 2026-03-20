@@ -1,183 +1,82 @@
 -- ============================================================
---   KrixUI - Example Script
---   Comment: Paste UILib.lua content above this, OR use loadstring
---   after uploading to GitHub with your real username.
---
---   Option A (GitHub raw, replace YOUR_USERNAME):
---     local KrixUI = loadstring(game:HttpGet(
---         "https://raw.githubusercontent.com/YOUR_USERNAME/KrixUI/main/UILib.lua", true
---     ))()
---
---   Option B (local test - paste UILib.lua source above this file,
---             then at bottom the library returns KrixUI, so do:)
---     local KrixUI = (paste UILib.lua here and it returns KrixUI)
+--   KrixUI v3.0 - Example Script
+--   Load the library from GitHub and create a demo UI
+--   GitHub: https://github.com/lfw5/UI-lib
 -- ============================================================
 
--- ── Chargement sécurisé de la lib ────────────────────────
-local RAW_URL = "https://raw.githubusercontent.com/lfw5/UI-lib/refs/heads/main/UILib.lua"
+local KrixUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/lfw5/UI-lib/refs/heads/main/UILib.lua"))()
 
-local source = nil
-local ok_http, err_http = pcall(function()
-    source = game:HttpGet(RAW_URL, true)
-end)
-
-if not ok_http or not source or source == "" then
-    error("[KrixUI] Échec HttpGet: " .. tostring(err_http))
-end
-
-local fn, err_load = loadstring(source)
-if not fn then
-    error("[KrixUI] Erreur de syntaxe dans UILib.lua: " .. tostring(err_load))
-end
-
-local KrixUI = fn()
-if not KrixUI then
-    error("[KrixUI] La lib a retourné nil. Vérifiez que UILib.lua finit bien par 'return KrixUI'")
-end
-
--- ── Create Window ─────────────────────────────────────────
+-- ── Create Window ──────────────────────────────────────────
 local Window = KrixUI:CreateWindow({
-    Title    = "KrixUI",
-    Subtitle = "v1.0",
-    Size     = UDim2.new(0, 620, 0, 440),
+    Title     = "KrixUI",
+    Subtitle  = "v3.0",
+    Size      = UDim2.new(0, 700, 0, 480),
+    ToggleKey = Enum.KeyCode.RightControl,
 })
 
--- ── Tab 1: Combat ─────────────────────────────────────────
-local CombatTab = Window:AddTab({ Name = "Combat", Icon = "⚔️" })
-local MainSection = CombatTab:AddSection("Main")
+-- ── Tab 1: Main ────────────────────────────────────────────
+local MainTab = Window:AddTab({ Name = "Main" })
+local GeneralSection = MainTab:AddSection("General")
 
-local aimbotToggle = MainSection:AddToggle({
-    Name     = "Aimbot",
-    Default  = false,
-    Callback = function(state)
-        print("Aimbot:", state)
-    end,
+GeneralSection:AddParagraph({
+    Title = "Welcome",
+    Content = "KrixUI v3.0 — A clean UI library for Roblox.\nUse the tabs to explore all available elements.",
 })
 
-local fovSlider = MainSection:AddSlider({
-    Name     = "FOV",
-    Min      = 10,
-    Max      = 500,
-    Default  = 150,
-    Suffix   = " px",
-    Callback = function(value)
-        print("FOV:", value)
-    end,
+local myToggle = GeneralSection:AddToggle({
+    Name = "Enable Feature", Default = false,
+    Callback = function(state) print("Toggle:", state) end,
 })
 
-MainSection:AddDropdown({
-    Name     = "Target Part",
-    Items    = { "Head", "HumanoidRootPart", "UpperTorso" },
-    Default  = "Head",
-    Callback = function(selected)
-        print("Target:", selected)
-    end,
+GeneralSection:AddSlider({
+    Name = "Value", Min = 0, Max = 100, Default = 50, Suffix = "%", Increment = 1,
+    Callback = function(v) print("Slider:", v) end,
 })
 
-local SettingsSection = CombatTab:AddSection("Settings")
-
-SettingsSection:AddKeybind({
-    Name     = "Toggle Aimbot",
-    Default  = Enum.KeyCode.E,
-    Callback = function()
-        aimbotToggle:Set(not aimbotToggle:Get())
-    end,
+GeneralSection:AddSlider({
+    Name = "Speed", Min = 1, Max = 50, Default = 10,
+    Callback = function(v) print("Speed:", v) end,
 })
 
-SettingsSection:AddSlider({
-    Name     = "Smoothness",
-    Min      = 1,
-    Max      = 20,
-    Default  = 5,
-    Callback = function(value)
-        print("Smoothness:", value)
-    end,
+GeneralSection:AddDropdown({
+    Name = "Mode", Items = { "Option A", "Option B", "Option C", "Option D" },
+    Default = "Option A", Callback = function(s) print("Dropdown:", s) end,
 })
 
--- ── Tab 2: Visual ─────────────────────────────────────────
-local VisualTab = Window:AddTab({ Name = "Visual", Icon = "👁️" })
-local ESPSection = VisualTab:AddSection("ESP")
+GeneralSection:AddSeparator()
 
-ESPSection:AddToggle({
-    Name     = "ESP Boxes",
-    Default  = false,
-    Callback = function(state)
-        print("ESP Boxes:", state)
-    end,
+GeneralSection:AddKeybind({
+    Name = "Toggle Key", Default = Enum.KeyCode.E,
+    Callback = function() myToggle:Set(not myToggle:Get()) end,
 })
 
-ESPSection:AddToggle({
-    Name     = "ESP Names",
-    Default  = false,
-    Callback = function(state)
-        print("ESP Names:", state)
-    end,
+-- ── Tab 2: Settings ────────────────────────────────────────
+local SettingsTab = Window:AddTab({ Name = "Settings" })
+local DisplaySection = SettingsTab:AddSection("Display")
+DisplaySection:AddToggle({ Name = "Option 1", Default = false, Callback = function(s) print("Opt1:", s) end })
+DisplaySection:AddToggle({ Name = "Option 2", Default = true, Callback = function(s) print("Opt2:", s) end })
+DisplaySection:AddToggle({ Name = "Option 3", Default = false, Callback = function(s) print("Opt3:", s) end })
+DisplaySection:AddSlider({ Name = "Intensity", Min = 0, Max = 100, Default = 75, Suffix = "%", Callback = function(v) print("Intensity:", v) end })
+
+local InputSection = SettingsTab:AddSection("Input")
+InputSection:AddTextBox({
+    Name = "Custom Value", Placeholder = "Enter something...",
+    Callback = function(text) print("Input:", text) end,
+})
+InputSection:AddKeybind({
+    Name = "Action Key", Default = Enum.KeyCode.F,
+    Callback = function() print("Action triggered") end,
 })
 
-ESPSection:AddSlider({
-    Name     = "Max Distance",
-    Min      = 50,
-    Max      = 2000,
-    Default  = 500,
-    Suffix   = " studs",
-    Callback = function(value)
-        print("ESP Distance:", value)
-    end,
-})
-
--- ── Tab 3: Misc ───────────────────────────────────────────
-local MiscTab = Window:AddTab({ Name = "Misc", Icon = "⚙️" })
-local MiscSection = MiscTab:AddSection("Utilities")
-
-MiscSection:AddButton({
-    Name     = "Rejoin Server",
-    Callback = function()
-        local TP = game:GetService("TeleportService")
-        TP:Teleport(game.PlaceId, game.Players.LocalPlayer)
-    end,
-})
-
-MiscSection:AddButton({
-    Name     = "Copy Player Name",
-    Callback = function()
-        local name = game.Players.LocalPlayer.Name
-        if setclipboard then setclipboard(name) end
-        Window:Notify({
-            Title       = "Copié !",
-            Description = name .. " copié dans le presse-papiers.",
-            Type        = "Success",
-            Duration    = 3,
-        })
-    end,
-})
-
-MiscSection:AddSeparator()
-MiscSection:AddLabel({ Text = "KrixUI v1.0.0 — Made by Krix" })
-
-local ScriptSection = MiscTab:AddSection("Script Input")
-
-ScriptSection:AddTextBox({
-    Name        = "Execute Lua",
-    Placeholder = "Entrez votre script ici...",
-    Callback    = function(text)
-        if text == "" then return end
-        local fn, err = loadstring(text)
-        if fn then
-            local ok, runErr = pcall(fn)
-            if not ok then
-                Window:Notify({ Title = "Runtime Error", Description = tostring(runErr), Type = "Error", Duration = 5 })
-            end
-        else
-            Window:Notify({ Title = "Syntax Error", Description = tostring(err), Type = "Error", Duration = 5 })
-        end
-    end,
-})
+-- ── Tab 3: Tools ───────────────────────────────────────────
+local ToolsTab = Window:AddTab({ Name = "Tools" })
+local ActionsSection = ToolsTab:AddSection("Actions")
+ActionsSection:AddButton({ Name = "Action 1", Callback = function() Window:Notify({ Title = "Done", Description = "Action 1 executed.", Type = "Success", Duration = 3 }) end })
+ActionsSection:AddButton({ Name = "Action 2", Callback = function() Window:Notify({ Title = "Done", Description = "Action 2 executed.", Type = "Info", Duration = 3 }) end })
+ActionsSection:AddSeparator()
+ActionsSection:AddLabel({ Text = "Made by Krix" })
+ActionsSection:AddParagraph({ Title = "KrixUI v3.0", Content = "Press Right Ctrl to toggle GUI." })
 
 -- ── Welcome notification ───────────────────────────────────
 task.wait(1)
-Window:Notify({
-    Title       = "KrixUI Chargé",
-    Description = "Bienvenue ! Script injecté avec succès.",
-    Type        = "Success",
-    Duration    = 4,
-})
+Window:Notify({ Title = "KrixUI", Description = "UI loaded. Press RCtrl to toggle.", Type = "Success", Duration = 4 })

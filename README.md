@@ -1,207 +1,225 @@
-# KrixUI — Roblox UI Library
+# KrixUI v3.0
 
-![Version](https://img.shields.io/badge/version-1.0.0-blueviolet)
-![Lua](https://img.shields.io/badge/language-Lua-blue)
-![Platform](https://img.shields.io/badge/platform-Roblox-red)
+> A clean, modern Roblox UI library with a refined dark red theme.  
+> Sharp corners, smooth Quint animations, sidebar navigation, notifications.
 
-A clean, modern, dark-themed Roblox exploit UI library with smooth animations, draggable windows, notifications, and a full set of UI elements.
+![Theme](https://img.shields.io/badge/Theme-Refined%20Dark%20Red-B92323?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.0-333?style=flat-square)
 
 ---
 
-## 📦 Loadstring (GitHub Raw)
+## Installation
+
+Paste this into your executor:
 
 ```lua
-local KrixUI = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/YOUR_USERNAME/KrixUI/main/UILib.lua",
-    true
-))()
+local KrixUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/lfw5/UI-lib/refs/heads/main/UILib.lua"))()
 ```
 
-> Replace `YOUR_USERNAME` with your actual GitHub username after uploading.
-
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```lua
-local KrixUI = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/YOUR_USERNAME/KrixUI/main/UILib.lua", true
-))()
+local KrixUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/lfw5/UI-lib/refs/heads/main/UILib.lua"))()
 
 local Window = KrixUI:CreateWindow({
-    Title    = "MyScript",
-    Subtitle = "v1.0",
-    Size     = UDim2.new(0, 620, 0, 440),
+    Title     = "My Script",
+    Subtitle  = "v1.0",
+    Size      = UDim2.new(0, 700, 0, 480),
+    ToggleKey = Enum.KeyCode.RightControl,
 })
 
-local Tab = Window:AddTab({ Name = "Main", Icon = "⚔️" })
-local Section = Tab:AddSection("Combat")
+local Tab = Window:AddTab({ Name = "Main" })
+local Section = Tab:AddSection("General")
 
-Section:AddToggle({
-    Name     = "Aimbot",
-    Default  = false,
-    Callback = function(state)
-        print("Aimbot:", state)
+Section:AddButton({
+    Name = "Click Me",
+    Callback = function()
+        Window:Notify({ Title = "Hello", Description = "Button clicked!", Type = "Success" })
     end,
 })
 ```
 
 ---
 
-## 📋 API Reference
+## API Reference
 
 ### `KrixUI:CreateWindow(options)`
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `Title` | string | `"KrixUI"` | Window title |
-| `Subtitle` | string | `"v1.0"` | Subtitle next to title |
-| `Size` | UDim2 | `600×420` | Window size |
-| `Position` | UDim2 | centered | Initial position |
+| Option      | Type        | Default                | Description                    |
+|-------------|-------------|------------------------|--------------------------------|
+| `Title`     | `string`    | `"KrixUI"`             | Window title                   |
+| `Subtitle`  | `string`    | `"v3.0"`               | Subtitle under title           |
+| `Size`      | `UDim2`     | `700x480`              | Window size                    |
+| `Position`  | `UDim2`     | Centered               | Window position                |
+| `ToggleKey` | `KeyCode`   | `RightControl`         | Key to show/hide the UI        |
 
-Returns a **Window** object.
+Returns a `Window` object.
 
 ---
 
 ### `Window:AddTab(options)`
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `Name` | string | Tab label |
-| `Icon` | string | Emoji icon (optional) |
+| Option  | Type     | Default | Description       |
+|---------|----------|---------|-------------------|
+| `Name`  | `string` | `"Tab"` | Tab display name  |
+| `Icon`  | `string` | `""`    | Optional icon text |
 
-Returns a **Tab** object.
+Returns a `Tab` object.
 
 ---
 
 ### `Tab:AddSection(name)`
 
-Returns a **Section** object.
+Creates a collapsible section with a header. Returns a `Section` object.
 
 ---
 
-### `Section:AddButton(options)`
+### Section Elements
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `Name` | string | Button label |
-| `Description` | string | Sub-text (optional) |
-| `Callback` | function | Fires on click |
+#### `Section:AddButton(options)`
 
----
+```lua
+Section:AddButton({
+    Name = "Run Script",
+    Callback = function() print("Clicked") end,
+})
+```
 
-### `Section:AddToggle(options)`
+#### `Section:AddToggle(options)`
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `Name` | string | — | Label |
-| `Default` | bool | `false` | Initial state |
-| `Callback` | function(bool) | — | Fires on change |
+```lua
+local toggle = Section:AddToggle({
+    Name = "Enable Feature",
+    Default = false,
+    Callback = function(state) print("Toggle:", state) end,
+})
+-- toggle:Set(true)  toggle:Get()
+```
 
-**Methods:** `:Set(bool)`, `:Get()` → bool
+#### `Section:AddSlider(options)`
 
----
+```lua
+local slider = Section:AddSlider({
+    Name = "Speed",
+    Min = 0, Max = 100,
+    Default = 50,
+    Suffix = "%",
+    Increment = 1,
+    Callback = function(value) print("Value:", value) end,
+})
+-- slider:Set(75)  slider:Get()
+```
 
-### `Section:AddSlider(options)`
+#### `Section:AddDropdown(options)`
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `Name` | string | — | Label |
-| `Min` | number | `0` | Minimum value |
-| `Max` | number | `100` | Maximum value |
-| `Default` | number | `Min` | Initial value |
-| `Suffix` | string | `""` | Value suffix (e.g. `" px"`) |
-| `Callback` | function(number) | — | Fires on change |
+```lua
+local dropdown = Section:AddDropdown({
+    Name = "Mode",
+    Items = { "Option A", "Option B", "Option C" },
+    Default = "Option A",
+    Callback = function(selected) print("Selected:", selected) end,
+})
+-- dropdown:Set("Option B")  dropdown:Get()  dropdown:Refresh(newItems)
+```
 
-**Methods:** `:Set(number)`, `:Get()` → number
+#### `Section:AddTextBox(options)`
 
----
+```lua
+local textbox = Section:AddTextBox({
+    Name = "Player Name",
+    Default = "",
+    Placeholder = "Enter name...",
+    Callback = function(text) print("Input:", text) end,
+})
+-- textbox:Set("value")  textbox:Get()
+```
 
-### `Section:AddDropdown(options)`
+#### `Section:AddKeybind(options)`
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `Name` | string | Label |
-| `Items` | table | List of strings |
-| `Default` | string | Initially selected item |
-| `Callback` | function(string) | Fires on selection |
+```lua
+local keybind = Section:AddKeybind({
+    Name = "Toggle Key",
+    Default = Enum.KeyCode.E,
+    Callback = function() print("Key pressed") end,
+})
+-- keybind:Set(Enum.KeyCode.F)  keybind:Get()
+```
 
-**Methods:** `:Set(string)`, `:Get()` → string, `:Refresh(table)`
+#### `Section:AddLabel(options)`
 
----
+```lua
+local label = Section:AddLabel({ Text = "Status: Ready" })
+-- label:Set("Status: Running")  label:Get()
+```
 
-### `Section:AddTextBox(options)`
+#### `Section:AddSeparator()`
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `Name` | string | Label |
-| `Placeholder` | string | Placeholder text |
-| `Default` | string | Default value |
-| `Callback` | function(string) | Fires on Enter |
+```lua
+Section:AddSeparator()
+```
 
-**Methods:** `:Set(string)`, `:Get()` → string
+#### `Section:AddParagraph(options)`
 
----
-
-### `Section:AddKeybind(options)`
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `Name` | string | Label |
-| `Default` | KeyCode | Default key |
-| `Callback` | function | Fires when key is pressed |
-
-**Methods:** `:Set(KeyCode)`, `:Get()` → KeyCode
-
----
-
-### `Section:AddLabel(options)`
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `Text` | string | Label text |
-
-**Methods:** `:Set(string)`, `:Get()` → string
-
----
-
-### `Section:AddSeparator()`
-
-Adds a thin horizontal separator line.
+```lua
+Section:AddParagraph({
+    Title = "Info",
+    Content = "This is a paragraph block with wrapped text.",
+})
+```
 
 ---
 
 ### `Window:Notify(options)`
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `Title` | string | `"KrixUI"` | Notification title |
-| `Description` | string | `""` | Body text |
-| `Type` | string | `"Info"` | `"Info"` \| `"Success"` \| `"Error"` |
-| `Duration` | number | `4` | Seconds before auto-dismiss |
-
----
-
-## 🎨 Theme
-
-The theme is defined in `KrixUI.Theme` and can be modified before creating a window:
-
 ```lua
-KrixUI.Theme.Accent = Color3.fromRGB(0, 170, 255)
+Window:Notify({
+    Title = "KrixUI",
+    Description = "Operation complete.",
+    Type = "Success",   -- "Success" | "Error" | "Warning" | "Info"
+    Duration = 4,
+})
 ```
 
 ---
 
-## 📁 Files
+## Theme
 
-| File | Description |
-|------|-------------|
-| `UILib.lua` | Main library source |
-| `Load.lua` | Minimal loadstring loader |
-| `Example.lua` | Full featured usage example |
+KrixUI v3.0 uses a **Refined Dark Red** theme:
+
+- **Background**: Near-black (`13, 13, 15`)
+- **Accent**: Deep red (`185, 35, 35`)
+- **No rounded corners** — all sharp edges
+- **Smooth Quint easing** animations
+- **Sidebar** with avatar and player name
+- **UIStroke** borders for clean outlines
 
 ---
 
-## ⚠️ Disclaimer
+## Files
 
-This library is intended for **educational purposes** only. Use responsibly and respect Roblox's Terms of Service.
+| File             | Description                                          |
+|------------------|------------------------------------------------------|
+| `UILib.lua`      | Main library — host on GitHub, load via `loadstring`  |
+| `Example.lua`    | Full demo with all elements (uses `loadstring`)       |
+| `Load.lua`       | Minimal one-liner loader                              |
+| `TestDirect.lua` | Library + demo inlined for local testing              |
+
+---
+
+## Features
+
+- Draggable window
+- Minimize / Close buttons
+- Toggle key (default: Right Ctrl)
+- Sidebar navigation with active indicator
+- Player avatar + username display
+- Animated notifications with progress bar
+- Button, Toggle, Slider, Dropdown, TextBox, Keybind, Label, Separator, Paragraph
+- Smooth open/close animations
+- Executor compatible (`gethui`, `syn.protect_gui`)
+
+---
+
+**Made by Krix**
