@@ -6,6 +6,15 @@
 
 local KrixUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/lfw5/UI-lib/refs/heads/main/UILib.lua"))()
 
+-- ── Key System (set Enabled = true to activate) ────────────
+KrixUI:KeySystem({
+    Enabled    = false,          -- Set to true to require a key
+    Service    = "key",          -- Your Junkie service name
+    Identifier = "1058257",      -- Your Junkie user ID
+    Provider   = "key",          -- Your provider name
+    MaxAttempts = 5,             -- Max failed attempts
+})
+
 -- ── Create Window ──────────────────────────────────────────
 local Window = KrixUI:CreateWindow({
     Title     = "KrixUI",

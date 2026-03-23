@@ -103,6 +103,425 @@ pcall(function()
     if old then old:Destroy() end
 end)
 
+-- ═══════════════════════════════════════════════════════════
+--   KEY SYSTEM (built-in Junkie integration)
+--   Usage: KrixUI:KeySystem({ Service = "key", Identifier = "1058257", Provider = "key" })
+--   Blocks execution until key is validated, then continues.
+-- ═══════════════════════════════════════════════════════════
+function lib:KeySystem(opts)
+    opts = opts or {}
+    local enabled = opts.Enabled
+    if enabled == nil then enabled = true end
+    if not enabled then return end
+
+    local serviceName = opts.Service or "key"
+    local identifier  = opts.Identifier or "0"
+    local provider    = opts.Provider or "key"
+    local maxAttempts = opts.MaxAttempts or 5
+
+    -- Load Junkie SDK
+    local Junkie = loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
+    Junkie.service    = serviceName
+    Junkie.identifier = identifier
+    Junkie.provider   = provider
+
+    getgenv().SCRIPT_KEY = nil
+
+    local errorMessages = {
+        KEY_INVALID       = "Key not found in system.",
+        KEY_EXPIRED       = "Key has expired — get a new one.",
+        HWID_BANNED       = "Hardware banned from this service.",
+        KEY_INVALIDATED   = "Key was manually disabled.",
+        ALREADY_USED      = "One-time key already used.",
+        HWID_MISMATCH     = "HWID limit reached — contact support.",
+        SERVICE_NOT_FOUND = "Service does not exist.",
+        SERVICE_MISMATCH  = "Key belongs to a different service.",
+        PREMIUM_REQUIRED  = "Premium key required.",
+        ERROR             = "Network error — try again.",
+    }
+
+    -- Cleanup old key UI
+    pcall(function()
+        local old = CoreGui:FindFirstChild("KrixUI_KeySystem")
+        if old then old:Destroy() end
+    end)
+
+    local guiParent = CoreGui
+    pcall(function() if gethui then guiParent = gethui() end end)
+
+    local KeyGui = Instance.new("ScreenGui")
+    KeyGui.Name           = "KrixUI_KeySystem"
+    KeyGui.ResetOnSpawn   = false
+    KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    KeyGui.IgnoreGuiInset = true
+    pcall(function() if syn and syn.protect_gui then syn.protect_gui(KeyGui) end end)
+    KeyGui.Parent = guiParent
+
+    -- Dark overlay
+    local overlay = Create("Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0, ZIndex = 1, Parent = KeyGui,
+    })
+    Tween(overlay, { BackgroundTransparency = 0.4 }, 0.5)
+
+    local W, H = 440, 380
+
+    -- Outer stroke frame
+    local cardOuter = Create("Frame", {
+        Name = "KeyCard",
+        Size = UDim2.new(0, W, 0, H),
+        Position = UDim2.new(0.5, -W/2, 0.5, -H/2),
+        BackgroundTransparency = 1, BorderSizePixel = 0,
+        ClipsDescendants = false, ZIndex = 10, Parent = KeyGui,
+    })
+    Create("UIStroke", { Color = Theme.BorderAccent, Thickness = 1, Transparency = 0.4, Parent = cardOuter })
+
+    local card = Create("Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Theme.Background, BorderSizePixel = 0,
+        ClipsDescendants = true, ZIndex = 10, Parent = cardOuter,
+    })
+
+    -- Open animation
+    cardOuter.Size = UDim2.new(0, 0, 0, 0)
+    cardOuter.Position = UDim2.new(0.5, 0, 0.5, 0)
+    Tween(cardOuter, {
+        Size = UDim2.new(0, W, 0, H),
+        Position = UDim2.new(0.5, -W/2, 0.5, -H/2),
+    }, 0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
+    -- Top bar
+    local topBar = Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 48),
+        BackgroundColor3 = Theme.TopBar, BorderSizePixel = 0,
+        ZIndex = 15, Parent = card,
+    })
+    Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 2), Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Theme.Accent, BorderSizePixel = 0,
+        ZIndex = 20, Parent = topBar,
+    })
+    Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -1),
+        BackgroundColor3 = Theme.Border, BorderSizePixel = 0,
+        ZIndex = 16, Parent = topBar,
+    })
+
+    local logoBg = Create("Frame", {
+        Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(0, 14, 0, 12),
+        BackgroundColor3 = Theme.Accent, BorderSizePixel = 0,
+        ZIndex = 16, Parent = topBar,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
+        Text = "K", Font = Enum.Font.GothamBold, TextSize = 14,
+        TextColor3 = Color3.fromRGB(255, 255, 255), ZIndex = 17, Parent = logoBg,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(0, 200, 0, 18), Position = UDim2.new(0, 50, 0, 10),
+        BackgroundTransparency = 1, Text = "KrixUI",
+        Font = Enum.Font.GothamBold, TextSize = 15,
+        TextColor3 = Theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 16, Parent = topBar,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(0, 200, 0, 14), Position = UDim2.new(0, 50, 0, 28),
+        BackgroundTransparency = 1, Text = "Authentication",
+        Font = Enum.Font.Gotham, TextSize = 11,
+        TextColor3 = Theme.TextMuted, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 16, Parent = topBar,
+    })
+
+    -- Close button
+    local closeBtn = Create("TextButton", {
+        Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(1, -40, 0.5, -14),
+        BackgroundColor3 = Theme.Element, BackgroundTransparency = 1,
+        Text = "X", Font = Enum.Font.GothamBold, TextSize = 12,
+        TextColor3 = Theme.TextMuted, BorderSizePixel = 0, ZIndex = 16, Parent = topBar,
+    })
+    closeBtn.MouseEnter:Connect(function()
+        Tween(closeBtn, { BackgroundTransparency = 0, BackgroundColor3 = Theme.Accent, TextColor3 = Color3.fromRGB(255,255,255) }, 0.2)
+    end)
+    closeBtn.MouseLeave:Connect(function()
+        Tween(closeBtn, { BackgroundTransparency = 1, TextColor3 = Theme.TextMuted }, 0.2)
+    end)
+    closeBtn.MouseButton1Click:Connect(function()
+        Tween(cardOuter, { Size = UDim2.new(0, W, 0, 0) }, 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+        Tween(overlay, { BackgroundTransparency = 1 }, 0.3)
+        task.wait(0.35)
+        KeyGui:Destroy()
+    end)
+
+    -- Draggable
+    MakeDraggable(cardOuter, topBar)
+
+    -- Content area
+    local contentArea = Create("Frame", {
+        Size = UDim2.new(1, 0, 1, -48), Position = UDim2.new(0, 0, 0, 48),
+        BackgroundColor3 = Theme.Background, BorderSizePixel = 0,
+        ZIndex = 11, Parent = card,
+    })
+
+    -- Section
+    local sectionOuter = Create("Frame", {
+        Size = UDim2.new(1, -24, 0, 0), Position = UDim2.new(0, 12, 0, 12),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1, BorderSizePixel = 0,
+        ZIndex = 12, Parent = contentArea,
+    })
+    Create("UIStroke", { Color = Theme.Border, Thickness = 1, Transparency = 0.4, Parent = sectionOuter })
+
+    local sectionInner = Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = Theme.Section, BorderSizePixel = 0,
+        ClipsDescendants = true, ZIndex = 12, Parent = sectionOuter,
+    })
+
+    -- Section header
+    local headerFrame = Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 32),
+        BackgroundColor3 = Theme.SectionHeader, BackgroundTransparency = 0.2,
+        BorderSizePixel = 0, ZIndex = 13, Parent = sectionInner,
+    })
+    Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -1),
+        BackgroundColor3 = Theme.Border, BorderSizePixel = 0, ZIndex = 14, Parent = headerFrame,
+    })
+    Create("Frame", {
+        Size = UDim2.new(0, 2, 0, 14), Position = UDim2.new(0, 8, 0.5, -7),
+        BackgroundColor3 = Theme.Accent, BorderSizePixel = 0,
+        ZIndex = 14, Parent = headerFrame,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(1, -24, 1, 0), Position = UDim2.new(0, 18, 0, 0),
+        BackgroundTransparency = 1, Text = "KEY VALIDATION",
+        Font = Enum.Font.GothamBold, TextSize = 10,
+        TextColor3 = Theme.TextAccent, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 14, Parent = headerFrame,
+    })
+
+    -- Items
+    local itemList = Create("Frame", {
+        Name = "Items", Size = UDim2.new(1, 0, 0, 0),
+        Position = UDim2.new(0, 0, 0, 34),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1, ZIndex = 13, Parent = sectionInner,
+    })
+    Create("UIListLayout", { Padding = UDim.new(0, 2), Parent = itemList })
+    Create("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), Parent = itemList })
+
+    -- Welcome paragraph
+    local welcomeElem = Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = Theme.InputBg, BorderSizePixel = 0,
+        ZIndex = 14, Parent = itemList,
+    })
+    Create("UIStroke", { Color = Theme.Border, Thickness = 1, Transparency = 0.5, Parent = welcomeElem })
+    Create("Frame", {
+        Size = UDim2.new(0, 2, 1, -4), Position = UDim2.new(0, 3, 0, 2),
+        BackgroundColor3 = Theme.Accent, BorderSizePixel = 0, ZIndex = 15, Parent = welcomeElem,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(1, -18, 0, 16), Position = UDim2.new(0, 12, 0, 5),
+        BackgroundTransparency = 1, Text = "Welcome, " .. LocalPlayer.Name,
+        Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = Theme.TextPrimary,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 15, Parent = welcomeElem,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(1, -18, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
+        Position = UDim2.new(0, 12, 0, 22),
+        BackgroundTransparency = 1, Text = "Enter your license key below to access the script.",
+        Font = Enum.Font.Gotham, TextSize = 11, TextColor3 = Theme.TextSecondary,
+        TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 15, Parent = welcomeElem,
+    })
+    Create("UIPadding", { PaddingBottom = UDim.new(0, 8), Parent = welcomeElem })
+
+    -- Key input
+    local inputElem = Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 52), BackgroundColor3 = Theme.Element,
+        BorderSizePixel = 0, ZIndex = 14, Parent = itemList,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(1, -16, 0, 18), Position = UDim2.new(0, 10, 0, 4),
+        BackgroundTransparency = 1, Text = "License Key",
+        Font = Enum.Font.Gotham, TextSize = 11, TextColor3 = Theme.TextSecondary,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 15, Parent = inputElem,
+    })
+    local boxBg = Create("Frame", {
+        Size = UDim2.new(1, -16, 0, 24), Position = UDim2.new(0, 8, 0, 24),
+        BackgroundColor3 = Theme.InputBg, BorderSizePixel = 0, ZIndex = 15, Parent = inputElem,
+    })
+    local boxStroke = Create("UIStroke", { Color = Theme.InputBorder, Thickness = 1, Parent = boxBg })
+    local keyInput = Create("TextBox", {
+        Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1, Text = "",
+        PlaceholderText = "XXXX-XXXX-XXXX-XXXX",
+        PlaceholderColor3 = Theme.TextMuted, Font = Enum.Font.GothamBold,
+        TextSize = 12, TextColor3 = Theme.TextPrimary,
+        TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
+        BorderSizePixel = 0, ZIndex = 16, Parent = boxBg,
+    })
+    keyInput.Focused:Connect(function() Tween(boxStroke, { Color = Theme.Accent }, 0.2) end)
+    keyInput.FocusLost:Connect(function() Tween(boxStroke, { Color = Theme.InputBorder }, 0.2) end)
+    inputElem.MouseEnter:Connect(function() Tween(inputElem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
+    inputElem.MouseLeave:Connect(function() Tween(inputElem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+
+    -- Status label
+    local statusLabel = Create("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1,
+        Text = "", Font = Enum.Font.Gotham, TextSize = 11,
+        TextColor3 = Theme.TextMuted, ZIndex = 14, Parent = itemList,
+    })
+    Create("UIPadding", { PaddingLeft = UDim.new(0, 4), Parent = statusLabel })
+
+    local function setStatus(msg, color)
+        statusLabel.Text = msg
+        statusLabel.TextColor3 = color or Theme.Error
+    end
+
+    -- Validate button
+    local validateElem = Create("TextButton", {
+        Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Theme.Element,
+        Text = "", BorderSizePixel = 0, AutoButtonColor = false,
+        ClipsDescendants = true, ZIndex = 14, Parent = itemList,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(1, -100, 1, 0), Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1, Text = "Validate Key",
+        Font = Enum.Font.Gotham, TextSize = 12, TextColor3 = Theme.TextPrimary,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 15, Parent = validateElem,
+    })
+    local validateBtn = Create("TextButton", {
+        Size = UDim2.new(0, 80, 0, 26), Position = UDim2.new(1, -88, 0.5, -13),
+        BackgroundColor3 = Theme.Accent, Text = "Validate",
+        Font = Enum.Font.GothamBold, TextSize = 11,
+        TextColor3 = Color3.fromRGB(255, 255, 255), BorderSizePixel = 0,
+        ZIndex = 16, Parent = validateElem,
+    })
+    validateElem.MouseEnter:Connect(function() Tween(validateElem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
+    validateElem.MouseLeave:Connect(function() Tween(validateElem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+
+    -- Get Key button
+    local getKeyElem = Create("TextButton", {
+        Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Theme.Element,
+        Text = "", BorderSizePixel = 0, AutoButtonColor = false,
+        ClipsDescendants = true, ZIndex = 14, Parent = itemList,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(1, -100, 1, 0), Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1, Text = "Get Key Link",
+        Font = Enum.Font.Gotham, TextSize = 12, TextColor3 = Theme.TextPrimary,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 15, Parent = getKeyElem,
+    })
+    local getKeyBtn = Create("TextButton", {
+        Size = UDim2.new(0, 80, 0, 26), Position = UDim2.new(1, -88, 0.5, -13),
+        BackgroundColor3 = Theme.AccentDark, Text = "Get Key",
+        Font = Enum.Font.GothamBold, TextSize = 11,
+        TextColor3 = Color3.fromRGB(255, 255, 255), BorderSizePixel = 0,
+        ZIndex = 16, Parent = getKeyElem,
+    })
+    getKeyElem.MouseEnter:Connect(function() Tween(getKeyElem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
+    getKeyElem.MouseLeave:Connect(function() Tween(getKeyElem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+
+    -- Separator + footer
+    Create("Frame", {
+        Size = UDim2.new(1, -8, 0, 1), BackgroundColor3 = Theme.Divider,
+        BorderSizePixel = 0, ZIndex = 14, Parent = itemList,
+    })
+    Create("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1,
+        Text = "KrixUI v3.0  •  Powered by Junkie",
+        Font = Enum.Font.Gotham, TextSize = 10, TextColor3 = Theme.TextMuted,
+        ZIndex = 14, Parent = itemList,
+    })
+
+    -- ── Logic ──────────────────────────────────────────────
+    local attempts = 0
+    local validating = false
+    local gettingLink = false
+
+    local function closeKeyUI()
+        Tween(cardOuter, { Size = UDim2.new(0, W, 0, 0) }, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+        Tween(overlay, { BackgroundTransparency = 1 }, 0.35)
+        task.wait(0.4)
+        KeyGui:Destroy()
+    end
+
+    validateBtn.MouseButton1Click:Connect(function()
+        if validating then return end
+        local k = keyInput.Text
+        if k == "" or #k < 4 then setStatus("Please enter a valid key.", Theme.Warning); return end
+        attempts = attempts + 1
+        if attempts > maxAttempts then setStatus("Too many failed attempts.", Theme.Error); task.wait(2); closeKeyUI(); return end
+        validating = true
+        validateBtn.Text = "..."
+        setStatus("Checking key...", Theme.TextSecondary)
+        Tween(boxStroke, { Color = Theme.Warning }, 0.2)
+        local ok, result = pcall(function() return Junkie.check_key(k) end)
+        if not ok then
+            setStatus("Request failed — check connection.", Theme.Error)
+            validateBtn.Text = "Validate"; Tween(boxStroke, { Color = Theme.InputBorder }, 0.2)
+            validating = false; return
+        end
+        if result and result.valid then
+            getgenv().SCRIPT_KEY = k
+            setStatus("Access granted!", Theme.Success)
+            validateBtn.Text = "OK"
+            Tween(validateBtn, { BackgroundColor3 = Theme.Success }, 0.2)
+            Tween(boxStroke, { Color = Theme.Success }, 0.2)
+            task.wait(1.5); closeKeyUI()
+        else
+            local errCode = result and result.error or "ERROR"
+            local errMsg = errorMessages[errCode] or ("Error: " .. tostring(errCode))
+            setStatus(errMsg, Theme.Error)
+            validateBtn.Text = "Validate"
+            Tween(boxStroke, { Color = Theme.Error }, 0.2)
+            task.delay(2, function() Tween(boxStroke, { Color = Theme.InputBorder }, 0.3) end)
+            if errCode == "HWID_BANNED" then
+                task.wait(2); pcall(function() Players.LocalPlayer:Kick("Hardware banned.") end)
+            end
+        end
+        validating = false
+    end)
+
+    getKeyBtn.MouseButton1Click:Connect(function()
+        if gettingLink then return end
+        gettingLink = true; getKeyBtn.Text = "..."
+        local ok, link, err = pcall(function() return Junkie.get_key_link() end)
+        if ok and link then
+            pcall(function()
+                if setclipboard then setclipboard(link)
+                elseif toclipboard then toclipboard(link) end
+            end)
+            setStatus("Link copied to clipboard!", Theme.Success)
+            getKeyBtn.Text = "Copied!"; task.wait(2); getKeyBtn.Text = "Get Key"
+        else
+            local errMsg = err or "ERROR"
+            if errMsg == "RATE_LIMITTED" then
+                setStatus("Rate limited — wait 5 minutes.", Theme.Warning)
+            else
+                setStatus("Failed to get key link.", Theme.Error)
+            end
+            getKeyBtn.Text = "Get Key"
+        end
+        gettingLink = false
+    end)
+
+    -- Enter key to validate
+    keyInput.FocusLost:Connect(function(enterPressed)
+        if enterPressed then validateBtn.MouseButton1Click:Fire() end
+    end)
+
+    -- Block until key is validated
+    while not getgenv().SCRIPT_KEY do
+        task.wait(0.1)
+    end
+end
+
 function lib:CreateWindow(options)
     options = options or {}
     local title    = options.Title    or "KrixUI"

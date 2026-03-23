@@ -18,6 +18,48 @@ local KrixUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/lfw5/U
 
 ---
 
+## Key System (Junkie)
+
+KrixUI has a built-in key validation system powered by Junkie. Just call `KeySystem()` before `CreateWindow()`.
+
+```lua
+local KrixUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/lfw5/UI-lib/refs/heads/main/UILib.lua"))()
+
+-- Enable key system (blocks until validated)
+KrixUI:KeySystem({
+    Enabled    = true,           -- true to enable, false to skip
+    Service    = "key",          -- Your Junkie service name
+    Identifier = "1058257",      -- Your Junkie user ID
+    Provider   = "key",          -- Your provider name
+    MaxAttempts = 5,             -- Max failed attempts (optional, default: 5)
+})
+
+-- Only runs after key is validated
+local Window = KrixUI:CreateWindow({ Title = "My Script" })
+```
+
+### KeySystem Options
+
+| Option        | Type      | Default | Description                                |
+|---------------|-----------|---------|--------------------------------------------|
+| `Enabled`     | `boolean` | `true`  | Set to `false` to skip key validation      |
+| `Service`     | `string`  | `"key"` | Your Junkie service name                   |
+| `Identifier`  | `string`  | `"0"`   | Your Junkie user ID                        |
+| `Provider`    | `string`  | `"key"` | Your provider name                         |
+| `MaxAttempts` | `number`  | `5`     | Max failed key attempts before auto-close  |
+
+### Disabling the Key System
+
+To temporarily disable key validation during development:
+
+```lua
+KrixUI:KeySystem({
+    Enabled = false,   -- Skips the key UI entirely
+})
+```
+
+---
+
 ## Quick Start
 
 ```lua
