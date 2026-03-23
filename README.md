@@ -28,10 +28,12 @@ local KrixUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/lfw5/U
 -- Enable key system (blocks until validated)
 KrixUI:KeySystem({
     Enabled    = true,           -- true to enable, false to skip
-    Service    = "",          -- Your Junkie service name
-    Identifier = "",      -- Your Junkie user ID
-    Provider   = "",          -- Your provider name
+    Service    = "",             -- Your Junkie service name
+    Identifier = "",             -- Your Junkie user ID
+    Provider   = "",             -- Your provider name
     MaxAttempts = 5,             -- Max failed attempts (optional, default: 5)
+    SaveKey    = true,           -- Save validated key locally (default: true)
+    FileName   = "KrixUI_Key.txt", -- File name for saved key (default)
 })
 
 -- Only runs after key is validated
@@ -40,13 +42,27 @@ local Window = KrixUI:CreateWindow({ Title = "My Script" })
 
 ### KeySystem Options
 
-| Option        | Type      | Default | Description                                |
-|---------------|-----------|---------|--------------------------------------------|
-| `Enabled`     | `boolean` | `true`  | Set to `false` to skip key validation      |
-| `Service`     | `string`  | `"key"` | Your Junkie service name                   |
-| `Identifier`  | `string`  | `"0"`   | Your Junkie user ID                        |
-| `Provider`    | `string`  | `"key"` | Your provider name                         |
-| `MaxAttempts` | `number`  | `5`     | Max failed key attempts before auto-close  |
+| Option        | Type      | Default             | Description                                              |
+|---------------|-----------|---------------------|----------------------------------------------------------|
+| `Enabled`     | `boolean` | `true`              | Set to `false` to skip key validation                    |
+| `Service`     | `string`  | `"key"`             | Your Junkie service name                                 |
+| `Identifier`  | `string`  | `"0"`               | Your Junkie user ID                                      |
+| `Provider`    | `string`  | `"key"`             | Your provider name                                       |
+| `MaxAttempts` | `number`  | `5`                 | Max failed key attempts before auto-close                |
+| `SaveKey`     | `boolean` | `true`              | Save validated key to file for auto-login next time      |
+| `FileName`    | `string`  | `"KrixUI_Key.txt"`  | File name used to save/load the key (executor workspace) |
+
+### Key Save System
+
+When `SaveKey` is `true` (default), the key system will:
+
+1. **On startup** — Check if a saved key file exists (`readfile` / `isfile`)
+2. **Auto-validate** — If found, validate the saved key with Junkie silently
+3. **Skip UI** — If the saved key is still valid, skip the key UI entirely
+4. **Pre-fill** — If the saved key is expired/invalid, pre-fill the textbox so the user doesn't have to paste again
+5. **Save on success** — After manual validation, save the new key to file (`writefile`)
+
+> Uses executor filesystem APIs (`readfile`, `writefile`, `isfile`). Compatible with most executors (Synapse, Fluxus, etc).
 
 ### Disabling the Key System
 
@@ -55,6 +71,15 @@ To temporarily disable key validation during development:
 ```lua
 KrixUI:KeySystem({
     Enabled = false,   -- Skips the key UI entirely
+})
+```
+
+### Disabling Key Save (force re-enter every time)
+
+```lua
+KrixUI:KeySystem({
+    Enabled = true,
+    SaveKey = false,   -- Never save/load key from file
 })
 ```
 
@@ -260,6 +285,7 @@ KrixUI v3.0 uses a **Refined Dark Red** theme:
 - Animated notifications with progress bar
 - Button, Toggle, Slider, Dropdown, TextBox, Keybind, Label, Separator, Paragraph
 - Smooth open/close animations
+- Built-in key system with save/auto-login
 - Executor compatible (`gethui`, `syn.protect_gui`)
 
 ---

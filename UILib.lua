@@ -118,6 +118,9 @@ function lib:KeySystem(opts)
     local identifier  = opts.Identifier or "0"
     local provider    = opts.Provider or "key"
     local maxAttempts = opts.MaxAttempts or 5
+    local saveKey     = opts.SaveKey
+    if saveKey == nil then saveKey = true end
+    local fileName    = opts.FileName or "KrixUI_Key.txt"
 
     -- Load Junkie SDK
     local Junkie = loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
@@ -126,6 +129,26 @@ function lib:KeySystem(opts)
     Junkie.provider   = provider
 
     getgenv().SCRIPT_KEY = nil
+
+    -- ── SaveKey: Try to load and validate saved key ────────
+    local savedKey = nil
+    if saveKey then
+        pcall(function()
+            if readfile and isfile and isfile(fileName) then
+                local content = readfile(fileName)
+                if content and #content >= 4 then
+                    savedKey = content:match("^%s*(.-)%s*$") -- trim
+                end
+            end
+        end)
+        if savedKey and #savedKey >= 4 then
+            local ok, result = pcall(function() return Junkie.check_key(savedKey) end)
+            if ok and result and result.valid then
+                getgenv().SCRIPT_KEY = savedKey
+                return -- Key still valid, skip UI entirely
+            end
+        end
+    end
 
     local errorMessages = {
         KEY_INVALID       = "Key not found in system.",
@@ -365,6 +388,10 @@ function lib:KeySystem(opts)
         TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
         BorderSizePixel = 0, ZIndex = 16, Parent = boxBg,
     })
+    -- Pre-fill with saved key if it exists (but was invalid/expired)
+    if savedKey and #savedKey >= 4 then
+        keyInput.Text = savedKey
+    end
     keyInput.Focused:Connect(function() Tween(boxStroke, { Color = Theme.Accent }, 0.2) end)
     keyInput.FocusLost:Connect(function() Tween(boxStroke, { Color = Theme.InputBorder }, 0.2) end)
     inputElem.MouseEnter:Connect(function() Tween(inputElem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
@@ -469,6 +496,12 @@ function lib:KeySystem(opts)
         end
         if result and result.valid then
             getgenv().SCRIPT_KEY = k
+            -- Save key to file for next time
+            if saveKey then
+                pcall(function()
+                    if writefile then writefile(fileName, k) end
+                end)
+            end
             setStatus("Access granted!", Theme.Success)
             validateBtn.Text = "OK"
             Tween(validateBtn, { BackgroundColor3 = Theme.Success }, 0.2)
