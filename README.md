@@ -28,9 +28,9 @@ local KrixUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/lfw5/U
 -- Enable key system (blocks until validated)
 KrixUI:KeySystem({
     Enabled    = true,           -- true to enable, false to skip
-    Service    = "key",          -- Your Junkie service name
-    Identifier = "1058257",      -- Your Junkie user ID
-    Provider   = "key",          -- Your provider name
+    Service    = "",          -- Your Junkie service name
+    Identifier = "",      -- Your Junkie user ID
+    Provider   = "",          -- Your provider name
     MaxAttempts = 5,             -- Max failed attempts (optional, default: 5)
 })
 
