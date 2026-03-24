@@ -146,9 +146,18 @@ function lib:KeySystem(opts)
             if ok and result and result.valid then
                 getgenv().SCRIPT_KEY = savedKey
                 return -- Key still valid, skip UI entirely
+            else
+                -- Saved key is invalid/expired — delete the file
+                pcall(function()
+                    if delfile then delfile(fileName)
+                    elseif writefile then writefile(fileName, "") end
+                end)
             end
         end
     end
+
+    -- Create blocking event
+    local keyValidated = Instance.new("BindableEvent")
 
     local errorMessages = {
         KEY_INVALID       = "Key not found in system.",
@@ -506,7 +515,9 @@ function lib:KeySystem(opts)
             validateBtn.Text = "OK"
             Tween(validateBtn, { BackgroundColor3 = Theme.Success }, 0.2)
             Tween(boxStroke, { Color = Theme.Success }, 0.2)
-            task.wait(1.5); closeKeyUI()
+            task.wait(1.5)
+            closeKeyUI()
+            keyValidated:Fire()
         else
             local errCode = result and result.error or "ERROR"
             local errMsg = errorMessages[errCode] or ("Error: " .. tostring(errCode))
@@ -549,10 +560,9 @@ function lib:KeySystem(opts)
         if enterPressed then validateBtn.MouseButton1Click:Fire() end
     end)
 
-    -- Block until key is validated
-    while not getgenv().SCRIPT_KEY do
-        task.wait(0.1)
-    end
+    -- Block until key is validated (BindableEvent is more reliable than polling)
+    keyValidated.Event:Wait()
+    keyValidated:Destroy()
 end
 
 function lib:CreateWindow(options)
