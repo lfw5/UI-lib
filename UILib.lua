@@ -141,24 +141,37 @@ function lib:KeySystem(opts)
                 end
             end
         end)
-    if savedKey and #savedKey >= 4 then
-        local ok, result = pcall(function() return Junkie.check_key(savedKey) end)
-        if ok and type(result) == "table" and result.valid == true then
-            getgenv().SCRIPT_KEY = savedKey
-            return -- Key still valid, skip UI entirely
-        else
-            -- Saved key is invalid/expired/check failed — delete the file
+
+        if savedKey and #savedKey >= 4 then
+            local keyIsValid = false
+            local checkOk, checkResult = pcall(function()
+                return Junkie.check_key(savedKey)
+            end)
+
+            if checkOk and checkResult then
+                -- check_key can return a table {valid=true/false} or a raw boolean
+                if type(checkResult) == "table" then
+                    keyIsValid = (checkResult.valid == true)
+                elseif type(checkResult) == "boolean" then
+                    keyIsValid = checkResult
+                end
+            end
+
+            if keyIsValid then
+                getgenv().SCRIPT_KEY = savedKey
+                return -- Key still valid, skip UI entirely
+            end
+
+            -- Saved key is invalid/expired/check failed — always clean up
             savedKey = nil
             pcall(function()
                 if delfile then
                     delfile(fileName)
                 elseif writefile then
-                    delfile = delfile or function() end
                     writefile(fileName, "")
                 end
             end)
         end
-    end
     end
 
     -- Create blocking event
