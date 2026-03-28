@@ -130,48 +130,55 @@ function lib:KeySystem(opts)
 
     getgenv().SCRIPT_KEY = nil
 
+    -- ── Helper: validate a key against the API ────────────
+    local function validateKeyOnline(k)
+        if not k or type(k) ~= "string" or #k < 4 then
+            return false
+        end
+        local ok, result = pcall(function()
+            return Junkie.check_key(k)
+        end)
+        if not ok then return false end
+        if type(result) ~= "table" then return false end
+        if result.valid ~= true then return false end
+        -- Reject keyless responses — the service must require real keys
+        if result.is_keyless == true then return false end
+        return true
+    end
+
+    -- ── Helper: delete the saved key file ─────────────────
+    local function deleteSavedKey()
+        pcall(function()
+            if delfile and isfile and isfile(fileName) then
+                delfile(fileName)
+            elseif writefile and isfile and isfile(fileName) then
+                writefile(fileName, "")
+            end
+        end)
+    end
+
     -- ── SaveKey: Try to load and validate saved key ────────
     local savedKey = nil
     if saveKey then
-        pcall(function()
+        local readOk = pcall(function()
             if readfile and isfile and isfile(fileName) then
                 local content = readfile(fileName)
                 if content and #content >= 4 then
-                    savedKey = content:match("^%s*(.-)%s*$") -- trim
+                    savedKey = content:match("^%s*(.-)%s*$")
                 end
             end
         end)
 
-        if savedKey and #savedKey >= 4 then
-            local keyIsValid = false
-            local checkOk, checkResult = pcall(function()
-                return Junkie.check_key(savedKey)
-            end)
-
-            if checkOk and checkResult then
-                -- check_key can return a table {valid=true/false} or a raw boolean
-                if type(checkResult) == "table" then
-                    keyIsValid = (checkResult.valid == true)
-                elseif type(checkResult) == "boolean" then
-                    keyIsValid = checkResult
-                end
-            end
-
-            if keyIsValid then
+        if readOk and savedKey and #savedKey >= 4 then
+            if validateKeyOnline(savedKey) then
                 getgenv().SCRIPT_KEY = savedKey
-                return -- Key still valid, skip UI entirely
+                return -- Key is valid, skip UI
             end
-
-            -- Saved key is invalid/expired/check failed — always clean up
-            savedKey = nil
-            pcall(function()
-                if delfile then
-                    delfile(fileName)
-                elseif writefile then
-                    writefile(fileName, "")
-                end
-            end)
         end
+
+        -- If we reach here, saved key is missing/invalid/expired/check failed
+        savedKey = nil
+        deleteSavedKey()
     end
 
     -- Create blocking event
@@ -521,7 +528,7 @@ function lib:KeySystem(opts)
             validateBtn.Text = "Validate"; Tween(boxStroke, { Color = Theme.InputBorder }, 0.2)
             validating = false; return
         end
-        if result and result.valid then
+        if result and result.valid and not result.is_keyless then
             getgenv().SCRIPT_KEY = k
             -- Save key to file for next time
             if saveKey then
