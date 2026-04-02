@@ -16,6 +16,29 @@ local RunService       = game:GetService("RunService")
 local CoreGui          = game:GetService("CoreGui")
 local LocalPlayer      = Players.LocalPlayer
 
+-- ── Mobile Detection ────────────────────────────────────────
+local ViewportSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+local isMobile = UserInputService.TouchEnabled and (ViewportSize.X < 1024 or ViewportSize.Y < 600)
+
+local Layout = {
+    WindowSize    = isMobile and UDim2.new(1, -20, 0.7, 0)   or UDim2.new(0, 700, 0, 480),
+    WindowPos     = isMobile and UDim2.new(0, 10, 0.15, 0)   or UDim2.new(0.5, -350, 0.5, -240),
+    SidebarWidth  = isMobile and 0   or 150,
+    TopBarHeight  = isMobile and 52  or 48,
+    TabBtnHeight  = isMobile and 44  or 34,
+    ElementHeight = isMobile and 46  or 38,
+    SliderHeight  = isMobile and 58  or 50,
+    DropItemH     = isMobile and 36  or 26,
+    CloseBtnSize  = isMobile and 38  or 28,
+    ToggleTrackW  = isMobile and 46  or 38,
+    ToggleTrackH  = isMobile and 24  or 20,
+    TextBody      = isMobile and 14  or 12,
+    TextSmall     = isMobile and 12  or 10,
+    KeyCardW      = isMobile and math.min(ViewportSize.X - 40, 440) or 440,
+    KeyCardH      = isMobile and math.min(ViewportSize.Y - 80, 380) or 380,
+    NotifWidth    = isMobile and math.min(ViewportSize.X - 20, 300) or 300,
+}
+
 local function Tween(obj, props, dur, style, dir)
     dur   = dur   or 0.3
     style = style or Enum.EasingStyle.Quint
@@ -61,6 +84,25 @@ local function MakeDraggable(frame, handle)
             )
         end
     end)
+end
+
+local function AddHoverEffect(element, hoverProps, normalProps, duration)
+    duration = duration or 0.15
+    if isMobile then
+        element.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch then
+                Tween(element, hoverProps, duration)
+            end
+        end)
+        element.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch then
+                Tween(element, normalProps, duration)
+            end
+        end)
+    else
+        element.MouseEnter:Connect(function() Tween(element, hoverProps, duration) end)
+        element.MouseLeave:Connect(function() Tween(element, normalProps, duration) end)
+    end
 end
 
 -- ── Theme: Refined Dark ────────────────────────────────────
@@ -223,7 +265,7 @@ function lib:KeySystem(opts)
     })
     Tween(overlay, { BackgroundTransparency = 0.4 }, 0.5)
 
-    local W, H = 440, 380
+    local W, H = Layout.KeyCardW, Layout.KeyCardH
 
     -- Outer stroke frame
     local cardOuter = Create("Frame", {
@@ -298,12 +340,9 @@ function lib:KeySystem(opts)
         Text = "X", Font = Enum.Font.GothamBold, TextSize = 12,
         TextColor3 = Theme.TextMuted, BorderSizePixel = 0, ZIndex = 16, Parent = topBar,
     })
-    closeBtn.MouseEnter:Connect(function()
-        Tween(closeBtn, { BackgroundTransparency = 0, BackgroundColor3 = Theme.Accent, TextColor3 = Color3.fromRGB(255,255,255) }, 0.2)
-    end)
-    closeBtn.MouseLeave:Connect(function()
-        Tween(closeBtn, { BackgroundTransparency = 1, TextColor3 = Theme.TextMuted }, 0.2)
-    end)
+    AddHoverEffect(closeBtn,
+        { BackgroundTransparency = 0, BackgroundColor3 = Theme.Accent, TextColor3 = Color3.fromRGB(255,255,255) },
+        { BackgroundTransparency = 1, TextColor3 = Theme.TextMuted }, 0.2)
     closeBtn.MouseButton1Click:Connect(function()
         Tween(cardOuter, { Size = UDim2.new(0, W, 0, 0) }, 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
         Tween(overlay, { BackgroundTransparency = 1 }, 0.3)
@@ -428,8 +467,7 @@ function lib:KeySystem(opts)
     end
     keyInput.Focused:Connect(function() Tween(boxStroke, { Color = Theme.Accent }, 0.2) end)
     keyInput.FocusLost:Connect(function() Tween(boxStroke, { Color = Theme.InputBorder }, 0.2) end)
-    inputElem.MouseEnter:Connect(function() Tween(inputElem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
-    inputElem.MouseLeave:Connect(function() Tween(inputElem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+    AddHoverEffect(inputElem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
 
     -- Status label
     local statusLabel = Create("TextLabel", {
@@ -463,8 +501,7 @@ function lib:KeySystem(opts)
         TextColor3 = Color3.fromRGB(255, 255, 255), BorderSizePixel = 0,
         ZIndex = 16, Parent = validateElem,
     })
-    validateElem.MouseEnter:Connect(function() Tween(validateElem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
-    validateElem.MouseLeave:Connect(function() Tween(validateElem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+    AddHoverEffect(validateElem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
 
     -- Get Key button
     local getKeyElem = Create("TextButton", {
@@ -485,8 +522,7 @@ function lib:KeySystem(opts)
         TextColor3 = Color3.fromRGB(255, 255, 255), BorderSizePixel = 0,
         ZIndex = 16, Parent = getKeyElem,
     })
-    getKeyElem.MouseEnter:Connect(function() Tween(getKeyElem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
-    getKeyElem.MouseLeave:Connect(function() Tween(getKeyElem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+    AddHoverEffect(getKeyElem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
 
     -- Separator + footer
     Create("Frame", {
@@ -594,9 +630,15 @@ function lib:CreateWindow(options)
     options = options or {}
     local title    = options.Title    or "KrixUI"
     local subtitle = options.Subtitle or "v3.0"
-    local size     = options.Size     or UDim2.new(0, 700, 0, 480)
-    local pos      = options.Position or UDim2.new(0.5, -350, 0.5, -240)
+    local size     = options.Size     or Layout.WindowSize
+    local pos      = options.Position or Layout.WindowPos
     local key      = options.ToggleKey or Enum.KeyCode.RightControl
+
+    -- On mobile, override any user-supplied fixed-pixel size
+    if isMobile then
+        size = Layout.WindowSize
+        pos  = Layout.WindowPos
+    end
 
     local guiParent = CoreGui
     pcall(function() if gethui then guiParent = gethui() end end)
@@ -627,7 +669,7 @@ function lib:CreateWindow(options)
 
     -- ── Top Bar ───────────────────────────────────────────
     local TopBar = Create("Frame", {
-        Name = "TopBar", Size = UDim2.new(1, 0, 0, 48),
+        Name = "TopBar", Size = UDim2.new(1, 0, 0, Layout.TopBarHeight),
         BackgroundColor3 = Theme.TopBar, BorderSizePixel = 0,
         ZIndex = 5, Parent = ClipFrame,
     })
@@ -677,17 +719,15 @@ function lib:CreateWindow(options)
 
     -- Close
     local CloseBtn = Create("TextButton", {
-        Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(1, -40, 0.5, -14),
+        Size = UDim2.new(0, Layout.CloseBtnSize, 0, Layout.CloseBtnSize),
+        Position = UDim2.new(1, -(Layout.CloseBtnSize + 12), 0.5, -Layout.CloseBtnSize/2),
         BackgroundColor3 = Theme.Element, BackgroundTransparency = 1,
         Text = "X", Font = Enum.Font.GothamBold, TextSize = 12,
         TextColor3 = Theme.TextMuted, BorderSizePixel = 0, ZIndex = 6, Parent = TopBar,
     })
-    CloseBtn.MouseEnter:Connect(function()
-        Tween(CloseBtn, { BackgroundTransparency = 0, BackgroundColor3 = Theme.Accent, TextColor3 = Color3.fromRGB(255,255,255) }, 0.2)
-    end)
-    CloseBtn.MouseLeave:Connect(function()
-        Tween(CloseBtn, { BackgroundTransparency = 1, TextColor3 = Theme.TextMuted }, 0.2)
-    end)
+    AddHoverEffect(CloseBtn,
+        { BackgroundTransparency = 0, BackgroundColor3 = Theme.Accent, TextColor3 = Color3.fromRGB(255,255,255) },
+        { BackgroundTransparency = 1, TextColor3 = Theme.TextMuted }, 0.2)
     CloseBtn.MouseButton1Click:Connect(function()
         Tween(StrokeFrame, { Size = UDim2.new(0, size.X.Offset, 0, 0), BackgroundTransparency = 1 }, 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
         task.wait(0.35)
@@ -696,23 +736,25 @@ function lib:CreateWindow(options)
 
     -- Minimize
     local MinBtn = Create("TextButton", {
-        Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(1, -72, 0.5, -14),
+        Size = UDim2.new(0, Layout.CloseBtnSize, 0, Layout.CloseBtnSize),
+        Position = UDim2.new(1, -(Layout.CloseBtnSize * 2 + 16), 0.5, -Layout.CloseBtnSize/2),
         BackgroundColor3 = Theme.Element, BackgroundTransparency = 1,
         Text = "-", Font = Enum.Font.GothamBold, TextSize = 16,
         TextColor3 = Theme.TextMuted, BorderSizePixel = 0, ZIndex = 6, Parent = TopBar,
     })
-    MinBtn.MouseEnter:Connect(function()
-        Tween(MinBtn, { BackgroundTransparency = 0, TextColor3 = Theme.TextPrimary }, 0.2)
-    end)
-    MinBtn.MouseLeave:Connect(function()
-        Tween(MinBtn, { BackgroundTransparency = 1, TextColor3 = Theme.TextMuted }, 0.2)
-    end)
+    AddHoverEffect(MinBtn,
+        { BackgroundTransparency = 0, TextColor3 = Theme.TextPrimary },
+        { BackgroundTransparency = 1, TextColor3 = Theme.TextMuted }, 0.2)
 
     local minimized = false
     MinBtn.MouseButton1Click:Connect(function()
         minimized = not minimized
         if minimized then
-            Tween(StrokeFrame, { Size = UDim2.new(0, size.X.Offset, 0, 48) }, 0.35, Enum.EasingStyle.Back)
+            if isMobile then
+                Tween(StrokeFrame, { Size = UDim2.new(size.X.Scale, size.X.Offset, 0, Layout.TopBarHeight) }, 0.35, Enum.EasingStyle.Back)
+            else
+                Tween(StrokeFrame, { Size = UDim2.new(0, size.X.Offset, 0, Layout.TopBarHeight) }, 0.35, Enum.EasingStyle.Back)
+            end
         else
             Tween(StrokeFrame, { Size = size }, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
         end
@@ -730,11 +772,30 @@ function lib:CreateWindow(options)
         end
     end)
 
+    -- ── Mobile: Floating toggle button ───────────────────
+    if isMobile then
+        local toggleBtn = Create("TextButton", {
+            Name = "MobileToggle",
+            Size = UDim2.new(0, 44, 0, 44),
+            Position = UDim2.new(0, 8, 0.5, -22),
+            BackgroundColor3 = Theme.Accent,
+            BackgroundTransparency = 0.3,
+            Text = "K", Font = Enum.Font.GothamBold, TextSize = 18,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            BorderSizePixel = 0, ZIndex = 999, Parent = ScreenGui,
+        })
+        MakeDraggable(toggleBtn)
+        toggleBtn.MouseButton1Click:Connect(function()
+            guiVisible = not guiVisible
+            StrokeFrame.Visible = guiVisible
+        end)
+    end
+
     -- ── Sidebar ───────────────────────────────────────────
     local Sidebar = Create("Frame", {
         Name = "Sidebar",
-        Size = UDim2.new(0, 150, 1, -48),
-        Position = UDim2.new(0, 0, 0, 48),
+        Size = UDim2.new(0, Layout.SidebarWidth, 1, -Layout.TopBarHeight),
+        Position = UDim2.new(0, 0, 0, Layout.TopBarHeight),
         BackgroundColor3 = Theme.TabBar,
         BorderSizePixel = 0, ZIndex = 3, Parent = ClipFrame,
     })
@@ -797,12 +858,61 @@ function lib:CreateWindow(options)
     -- ── Content Area ──────────────────────────────────────
     local ContentArea = Create("Frame", {
         Name = "Content",
-        Size = UDim2.new(1, -150, 1, -48),
-        Position = UDim2.new(0, 150, 0, 48),
+        Size = UDim2.new(1, -Layout.SidebarWidth, 1, -Layout.TopBarHeight),
+        Position = UDim2.new(0, Layout.SidebarWidth, 0, Layout.TopBarHeight),
         BackgroundColor3 = Theme.Background,
         BorderSizePixel = 0, ClipsDescendants = false,
         ZIndex = 2, Parent = ClipFrame,
     })
+
+    -- ── Mobile: Sidebar overlay + hamburger ──────────────
+    local sidebarOpen = false
+    local toggleSidebar -- forward declare
+    if isMobile then
+        Sidebar.Size = UDim2.new(0.6, 0, 1, -Layout.TopBarHeight)
+        Sidebar.Position = UDim2.new(-0.6, 0, 0, Layout.TopBarHeight)
+        Sidebar.ZIndex = 50
+
+        local sidebarOverlay = Create("Frame", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0, ZIndex = 49,
+            Visible = false, Parent = ClipFrame,
+        })
+
+        toggleSidebar = function()
+            sidebarOpen = not sidebarOpen
+            if sidebarOpen then
+                sidebarOverlay.Visible = true
+                Tween(sidebarOverlay, { BackgroundTransparency = 0.5 }, 0.25)
+                Tween(Sidebar, { Position = UDim2.new(0, 0, 0, Layout.TopBarHeight) }, 0.3, Enum.EasingStyle.Quint)
+            else
+                Tween(sidebarOverlay, { BackgroundTransparency = 1 }, 0.25)
+                Tween(Sidebar, { Position = UDim2.new(-0.6, 0, 0, Layout.TopBarHeight) }, 0.3, Enum.EasingStyle.Quint)
+                task.delay(0.3, function() sidebarOverlay.Visible = false end)
+            end
+        end
+
+        local overlayBtn = Create("TextButton", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1, Text = "",
+            ZIndex = 49, Parent = sidebarOverlay,
+        })
+        overlayBtn.MouseButton1Click:Connect(function()
+            if sidebarOpen then toggleSidebar() end
+        end)
+
+        local hamburger = Create("TextButton", {
+            Size = UDim2.new(0, 38, 0, 38),
+            Position = UDim2.new(1, -120, 0.5, -19),
+            BackgroundTransparency = 1, Text = "=",
+            Font = Enum.Font.GothamBold, TextSize = 20,
+            TextColor3 = Theme.TextSecondary,
+            BorderSizePixel = 0, ZIndex = 7, Parent = TopBar,
+        })
+        hamburger.MouseButton1Click:Connect(toggleSidebar)
+    end
 
     -- Open animation
     StrokeFrame.Size = UDim2.new(0, 0, 0, 0)
@@ -814,12 +924,14 @@ function lib:CreateWindow(options)
         ScreenGui = ScreenGui, Main = StrokeFrame,
         TabList = TabList, ContentArea = ContentArea,
         Tabs = {}, ActiveTab = nil,
+        _isMobile = isMobile,
+        _toggleSidebar = toggleSidebar,
     }
 
     -- ── Notifications ─────────────────────────────────────
     local notifContainer = Create("Frame", {
-        Name = "Notifs", Size = UDim2.new(0, 300, 1, 0),
-        Position = UDim2.new(1, -310, 0, 0),
+        Name = "Notifs", Size = UDim2.new(0, Layout.NotifWidth, 1, 0),
+        Position = UDim2.new(1, -(Layout.NotifWidth + 10), 0, 0),
         BackgroundTransparency = 1, BorderSizePixel = 0,
         ZIndex = 50, Parent = ScreenGui,
     })
@@ -906,7 +1018,7 @@ function lib:CreateWindow(options)
         if tabIcon ~= "" then displayText = tabIcon .. "  " .. tabName end
 
         local btnContainer = Create("Frame", {
-            Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, Layout.TabBtnHeight), BackgroundTransparency = 1,
             BorderSizePixel = 0, ZIndex = 5, Parent = self.TabList,
         })
 
@@ -930,7 +1042,7 @@ function lib:CreateWindow(options)
         local btnLabel = Create("TextLabel", {
             Size = UDim2.new(1, -14, 1, 0), Position = UDim2.new(0, 10, 0, 0),
             BackgroundTransparency = 1, Text = displayText,
-            Font = Enum.Font.Gotham, TextSize = 12,
+            Font = Enum.Font.Gotham, TextSize = Layout.TextBody,
             TextColor3 = Theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 7, Parent = btn,
         })
@@ -962,15 +1074,31 @@ function lib:CreateWindow(options)
             Tween(indicator, { Size = UDim2.new(0, 2, 0, 16) }, 0.25, Enum.EasingStyle.Back)
             page.Visible = true
             self.ActiveTab = Tab
+            if self._isMobile and self._toggleSidebar and sidebarOpen then
+                self._toggleSidebar()
+            end
         end
 
         btn.MouseButton1Click:Connect(Activate)
-        btn.MouseEnter:Connect(function()
-            if self.ActiveTab ~= Tab then Tween(btn, { BackgroundTransparency = 0.92, BackgroundColor3 = Theme.TabHover }, 0.15) end
-        end)
-        btn.MouseLeave:Connect(function()
-            if self.ActiveTab ~= Tab then Tween(btn, { BackgroundTransparency = 1 }, 0.15) end
-        end)
+        if isMobile then
+            btn.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Touch and self.ActiveTab ~= Tab then
+                    Tween(btn, { BackgroundTransparency = 0.92, BackgroundColor3 = Theme.TabHover }, 0.15)
+                end
+            end)
+            btn.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Touch and self.ActiveTab ~= Tab then
+                    Tween(btn, { BackgroundTransparency = 1 }, 0.15)
+                end
+            end)
+        else
+            btn.MouseEnter:Connect(function()
+                if self.ActiveTab ~= Tab then Tween(btn, { BackgroundTransparency = 0.92, BackgroundColor3 = Theme.TabHover }, 0.15) end
+            end)
+            btn.MouseLeave:Connect(function()
+                if self.ActiveTab ~= Tab then Tween(btn, { BackgroundTransparency = 1 }, 0.15) end
+            end)
+        end
 
         table.insert(self.Tabs, Tab)
         if #self.Tabs == 1 then Activate() end
@@ -1033,7 +1161,7 @@ function lib:CreateWindow(options)
                 opts = opts or {}
                 local callback = opts.Callback or function() end
                 local elem = Create("TextButton", {
-                    Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Theme.Element,
+                    Size = UDim2.new(1, 0, 0, Layout.ElementHeight), BackgroundColor3 = Theme.Element,
                     Text = "", BorderSizePixel = 0, AutoButtonColor = false,
                     ClipsDescendants = true, ZIndex = 5, Parent = itemList,
                 })
@@ -1056,8 +1184,7 @@ function lib:CreateWindow(options)
                     Tween(execBtn, { BackgroundTransparency = 0 }, 0.1)
                     callback()
                 end)
-                elem.MouseEnter:Connect(function() Tween(elem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
-                elem.MouseLeave:Connect(function() Tween(elem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+                AddHoverEffect(elem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
                 return elem
             end
 
@@ -1066,7 +1193,7 @@ function lib:CreateWindow(options)
                 local state = opts.Default or false
                 local callback = opts.Callback or function() end
                 local elem = Create("Frame", {
-                    Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Theme.Element,
+                    Size = UDim2.new(1, 0, 0, Layout.ElementHeight), BackgroundColor3 = Theme.Element,
                     BorderSizePixel = 0, ZIndex = 5, Parent = itemList,
                 })
                 Create("TextLabel", {
@@ -1077,17 +1204,19 @@ function lib:CreateWindow(options)
                 })
                 local onCol = Theme.ToggleOn
                 local offCol = Theme.ToggleOff
-                local onPos = UDim2.new(1, -18, 0.5, -7)
-                local offPos = UDim2.new(0, 3, 0.5, -7)
+                local knobSize = isMobile and 16 or 14
+                local onPos = UDim2.new(1, -(knobSize + 4), 0.5, -knobSize/2)
+                local offPos = UDim2.new(0, 3, 0.5, -knobSize/2)
                 local initCol = state and onCol or offCol
                 local initPos = state and onPos or offPos
 
                 local trackBg = Create("Frame", {
-                    Size = UDim2.new(0, 38, 0, 20), Position = UDim2.new(1, -48, 0.5, -10),
+                    Size = UDim2.new(0, Layout.ToggleTrackW, 0, Layout.ToggleTrackH),
+                    Position = UDim2.new(1, -(Layout.ToggleTrackW + 10), 0.5, -Layout.ToggleTrackH/2),
                     BackgroundColor3 = initCol, BorderSizePixel = 0, ZIndex = 6, Parent = elem,
                 })
                 local knob = Create("Frame", {
-                    Size = UDim2.new(0, 14, 0, 14), Position = initPos,
+                    Size = UDim2.new(0, knobSize, 0, knobSize), Position = initPos,
                     BackgroundColor3 = Color3.fromRGB(255,255,255),
                     BorderSizePixel = 0, ZIndex = 7, Parent = trackBg,
                 })
@@ -1102,8 +1231,7 @@ function lib:CreateWindow(options)
                     Text = "", ZIndex = 8, Parent = elem,
                 })
                 clickArea.MouseButton1Click:Connect(function() state = not state; UpdateToggle(); callback(state) end)
-                elem.MouseEnter:Connect(function() Tween(elem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
-                elem.MouseLeave:Connect(function() Tween(elem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+                AddHoverEffect(elem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
                 local ToggleObj = {}
                 function ToggleObj:Set(v) state = v; UpdateToggle(); callback(state) end
                 function ToggleObj:Get() return state end
@@ -1119,7 +1247,7 @@ function lib:CreateWindow(options)
                 local increment = opts.Increment or 1
                 local callback = opts.Callback or function() end
                 local elem = Create("Frame", {
-                    Size = UDim2.new(1, 0, 0, 50), BackgroundColor3 = Theme.Element,
+                    Size = UDim2.new(1, 0, 0, Layout.SliderHeight), BackgroundColor3 = Theme.Element,
                     BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 5, Parent = itemList,
                 })
                 Create("TextLabel", {
@@ -1154,10 +1282,10 @@ function lib:CreateWindow(options)
                 })
                 Create("UIStroke", { Color = Theme.Accent, Thickness = 1.5, Parent = thumb })
                 local sliding = false
-                trackContainer.InputBegan:Connect(function(inp) if inp.UserInputType == Enum.UserInputType.MouseButton1 then sliding = true end end)
-                UserInputService.InputEnded:Connect(function(inp) if inp.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end end)
+                trackContainer.InputBegan:Connect(function(inp) if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then sliding = true end end)
+                UserInputService.InputEnded:Connect(function(inp) if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then sliding = false end end)
                 UserInputService.InputChanged:Connect(function(inp)
-                    if sliding and inp.UserInputType == Enum.UserInputType.MouseMovement then
+                    if sliding and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
                         local rel = math.clamp((inp.Position.X - trackContainer.AbsolutePosition.X) / trackContainer.AbsoluteSize.X, 0, 1)
                         local raw = min + (max - min) * rel
                         local stepped = math.floor(raw / increment + 0.5) * increment
@@ -1172,8 +1300,7 @@ function lib:CreateWindow(options)
                         end
                     end
                 end)
-                elem.MouseEnter:Connect(function() Tween(elem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
-                elem.MouseLeave:Connect(function() Tween(elem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+                AddHoverEffect(elem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
                 local SliderObj = {}
                 function SliderObj:Set(v) value = math.clamp(v, min, max); local r = (value-min)/(max-min); fill.Size = UDim2.new(r,0,1,0); thumb.Position = UDim2.new(r,-6,0.5,-6); valLabel.Text = tostring(value)..suffix; callback(value) end
                 function SliderObj:Get() return value end
@@ -1187,7 +1314,7 @@ function lib:CreateWindow(options)
                 local callback = opts.Callback or function() end
                 local open = false
                 local elem = Create("Frame", {
-                    Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Theme.Element,
+                    Size = UDim2.new(1, 0, 0, Layout.ElementHeight), BackgroundColor3 = Theme.Element,
                     BorderSizePixel = 0, ClipsDescendants = false, ZIndex = 5, Parent = itemList,
                 })
                 Create("TextLabel", {
@@ -1214,17 +1341,18 @@ function lib:CreateWindow(options)
                     TextSize = 10, TextColor3 = Theme.TextMuted, ZIndex = 7, Parent = selBtn,
                 })
 
-                -- dropFrame parented to ContentArea so it renders above everything
+                -- dropFrame: on mobile, parent to ScreenGui to avoid clipping
                 local dropFrame = Create("Frame", {
                     Size = UDim2.new(0, 0, 0, 0),
                     BackgroundColor3 = Theme.InputBg, BorderSizePixel = 0,
                     ClipsDescendants = true, ZIndex = 100, Visible = false,
-                    Parent = ContentArea,
+                    Parent = isMobile and Window.ScreenGui or ContentArea,
                 })
                 Create("UIStroke", { Color = Theme.Accent, Thickness = 1, Transparency = 0.5, Parent = dropFrame })
                 local dropScroll = Create("ScrollingFrame", {
                     Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
-                    BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = Theme.Accent,
+                    BorderSizePixel = 0, ScrollBarThickness = isMobile and 6 or 2,
+                    ScrollBarImageColor3 = Theme.Accent,
                     CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y,
                     ZIndex = 101, Parent = dropFrame,
                 })
@@ -1236,19 +1364,32 @@ function lib:CreateWindow(options)
                     for _, item in ipairs(items) do
                         local isS = (item == selected)
                         local iBtn = Create("TextButton", {
-                            Size = UDim2.new(1, 0, 0, 26),
+                            Size = UDim2.new(1, 0, 0, Layout.DropItemH),
                             BackgroundColor3 = isS and Theme.Accent or Theme.TabInactive,
                             BackgroundTransparency = isS and 0.3 or 0.7,
-                            Text = item, Font = Enum.Font.Gotham, TextSize = 11,
+                            Text = item, Font = Enum.Font.Gotham, TextSize = Layout.TextSmall,
                             TextColor3 = isS and Theme.TextPrimary or Theme.TextSecondary,
                             BorderSizePixel = 0, ZIndex = 102, Parent = dropScroll,
                         })
-                        iBtn.MouseEnter:Connect(function()
-                            if not isS then Tween(iBtn, { BackgroundTransparency = 0.4 }, 0.1) end
-                        end)
-                        iBtn.MouseLeave:Connect(function()
-                            if not isS then Tween(iBtn, { BackgroundTransparency = 0.7 }, 0.1) end
-                        end)
+                        if isMobile then
+                            iBtn.InputBegan:Connect(function(input)
+                                if input.UserInputType == Enum.UserInputType.Touch and not isS then
+                                    Tween(iBtn, { BackgroundTransparency = 0.4 }, 0.1)
+                                end
+                            end)
+                            iBtn.InputEnded:Connect(function(input)
+                                if input.UserInputType == Enum.UserInputType.Touch and not isS then
+                                    Tween(iBtn, { BackgroundTransparency = 0.7 }, 0.1)
+                                end
+                            end)
+                        else
+                            iBtn.MouseEnter:Connect(function()
+                                if not isS then Tween(iBtn, { BackgroundTransparency = 0.4 }, 0.1) end
+                            end)
+                            iBtn.MouseLeave:Connect(function()
+                                if not isS then Tween(iBtn, { BackgroundTransparency = 0.7 }, 0.1) end
+                            end)
+                        end
                         iBtn.MouseButton1Click:Connect(function()
                             selected = item; selLabel.Text = item; open = false
                             Tween(dropFrame, { Size = UDim2.new(0, dropFrame.AbsoluteSize.X, 0, 0) }, 0.2)
@@ -1260,13 +1401,20 @@ function lib:CreateWindow(options)
                 BuildItems()
 
                 local function OpenDrop()
-                    local caPos  = ContentArea.AbsolutePosition
                     local btnPos = selBtn.AbsolutePosition
                     local btnSize = selBtn.AbsoluteSize
                     local w = btnSize.X
-                    local h = math.min(#items * 28 + 8, 150)
-                    local x = btnPos.X - caPos.X
-                    local y = btnPos.Y - caPos.Y + btnSize.Y + 3
+                    local maxDropH = isMobile and 250 or 150
+                    local h = math.min(#items * (Layout.DropItemH + 2) + 8, maxDropH)
+                    local x, y
+                    if isMobile then
+                        x = btnPos.X
+                        y = btnPos.Y + btnSize.Y + 3
+                    else
+                        local caPos = ContentArea.AbsolutePosition
+                        x = btnPos.X - caPos.X
+                        y = btnPos.Y - caPos.Y + btnSize.Y + 3
+                    end
                     dropFrame.Position = UDim2.new(0, x, 0, y)
                     dropFrame.Size = UDim2.new(0, w, 0, 0)
                     dropFrame.Visible = true
@@ -1284,8 +1432,7 @@ function lib:CreateWindow(options)
                     open = not open
                     if open then OpenDrop() else CloseDrop() end
                 end)
-                elem.MouseEnter:Connect(function() Tween(elem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
-                elem.MouseLeave:Connect(function() Tween(elem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+                AddHoverEffect(elem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
                 local DropObj = {}
                 function DropObj:Set(v) selected = v; selLabel.Text = v; BuildItems(); callback(v) end
                 function DropObj:Get() return selected end
@@ -1322,8 +1469,7 @@ function lib:CreateWindow(options)
                 })
                 box.Focused:Connect(function() Tween(boxStroke, { Color = Theme.Accent }, 0.2) end)
                 box.FocusLost:Connect(function(enter) Tween(boxStroke, { Color = Theme.InputBorder }, 0.2); if enter then callback(box.Text) end end)
-                elem.MouseEnter:Connect(function() Tween(elem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
-                elem.MouseLeave:Connect(function() Tween(elem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+                AddHoverEffect(elem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
                 local BoxObj = {}
                 function BoxObj:Set(v) box.Text = v end
                 function BoxObj:Get() return box.Text end
@@ -1332,17 +1478,53 @@ function lib:CreateWindow(options)
 
             function Section:AddKeybind(opts)
                 opts = opts or {}
-                local current = opts.Default or Enum.KeyCode.Unknown
                 local callback = opts.Callback or function() end
+
+                if isMobile then
+                    -- On mobile: show as a simple tap-to-trigger button
+                    local elem = Create("Frame", {
+                        Size = UDim2.new(1, 0, 0, Layout.ElementHeight),
+                        BackgroundColor3 = Theme.Element,
+                        BorderSizePixel = 0, ZIndex = 5, Parent = itemList,
+                    })
+                    Create("TextLabel", {
+                        Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.new(0, 10, 0, 0),
+                        BackgroundTransparency = 1, Text = opts.Name or "Keybind",
+                        Font = Enum.Font.Gotham, TextSize = Layout.TextBody,
+                        TextColor3 = Theme.TextPrimary,
+                        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 6, Parent = elem,
+                    })
+                    local tapBtn = Create("TextButton", {
+                        Size = UDim2.new(0, 80, 0, 32),
+                        Position = UDim2.new(1, -88, 0.5, -16),
+                        BackgroundColor3 = Theme.Accent, Text = "Tap",
+                        Font = Enum.Font.GothamBold, TextSize = Layout.TextSmall,
+                        TextColor3 = Color3.fromRGB(255, 255, 255),
+                        BorderSizePixel = 0, ZIndex = 7, Parent = elem,
+                    })
+                    tapBtn.MouseButton1Click:Connect(function()
+                        Tween(tapBtn, { BackgroundTransparency = 0.3 }, 0.08)
+                        task.wait(0.08)
+                        Tween(tapBtn, { BackgroundTransparency = 0 }, 0.1)
+                        callback()
+                    end)
+                    AddHoverEffect(elem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
+                    local KeyObj = {}
+                    function KeyObj:Set() end
+                    function KeyObj:Get() return Enum.KeyCode.Unknown end
+                    return KeyObj
+                end
+
+                local current = opts.Default or Enum.KeyCode.Unknown
                 local listening = false
                 local elem = Create("Frame", {
-                    Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = Theme.Element,
+                    Size = UDim2.new(1, 0, 0, Layout.ElementHeight), BackgroundColor3 = Theme.Element,
                     BorderSizePixel = 0, ZIndex = 5, Parent = itemList,
                 })
                 Create("TextLabel", {
                     Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.new(0, 10, 0, 0),
                     BackgroundTransparency = 1, Text = opts.Name or "Keybind",
-                    Font = Enum.Font.Gotham, TextSize = 12, TextColor3 = Theme.TextPrimary,
+                    Font = Enum.Font.Gotham, TextSize = Layout.TextBody, TextColor3 = Theme.TextPrimary,
                     TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 6, Parent = elem,
                 })
                 local keyBtn = Create("TextButton", {
@@ -1366,8 +1548,7 @@ function lib:CreateWindow(options)
                         callback()
                     end
                 end)
-                elem.MouseEnter:Connect(function() Tween(elem, { BackgroundColor3 = Theme.ElementHover }, 0.15) end)
-                elem.MouseLeave:Connect(function() Tween(elem, { BackgroundColor3 = Theme.Element }, 0.15) end)
+                AddHoverEffect(elem, { BackgroundColor3 = Theme.ElementHover }, { BackgroundColor3 = Theme.Element })
                 local KeyObj = {}
                 function KeyObj:Set(k) current = k; keyBtn.Text = k.Name end
                 function KeyObj:Get() return current end
